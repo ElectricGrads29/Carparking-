@@ -1,0 +1,46 @@
+#include <Wire.h> #include <LiquidCrystal_I2C.h> #include <Servo.h>
+
+// Pin Definitions #define IR_SENSOR1 2  // Entrance IR Sensor #define IR_SENSOR2 3  // Exit IR Sensor #define SERVO_PIN 9   // Servo Motor Control
+
+int parkingSpaces = 2;  // Total available spaces Servo gateServo; LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() { Serial.begin(9600);
+
+// Set up pins
+pinMode(IR_SENSOR1, INPUT);
+pinMode(IR_SENSOR2, INPUT);
+gateServo.attach(SERVO_PIN);
+gateServo.write(0);  // Set gate to initial closed position
+
+// Initialize LCD
+lcd.init();
+lcd.backlight();
+updateDisplay();
+
+}
+
+void loop() { // Entrance Sensor - Car Coming In if (digitalRead(IR_SENSOR1) == LOW && parkingSpaces > 0) { delay(300); if (digitalRead(IR_SENSOR1) == LOW) { parkingSpaces--; openGate(); updateDisplay(); while (digitalRead(IR_SENSOR1) == LOW);  // Wait until car fully enters } }
+
+// Exit Sensor - Car Leaving
+if (digitalRead(IR_SENSOR2) == LOW && parkingSpaces < 2) {
+    delay(300);
+    if (digitalRead(IR_SENSOR2) == LOW) {
+        parkingSpaces++;
+        updateDisplay();
+        while (digitalRead(IR_SENSOR2) == LOW);  // Wait until car fully exits
+    }
+}
+
+}
+
+// Function to Open and Close the Gate Smoothly (180° Rotation) void openGate() { // Open gate (0° to 180°) for (int pos = 0; pos <= 180; pos += 2) { gateServo.write(pos); delay(20); } delay(3000);  // Wait for car to pass
+
+// Close gate (180° to 0°)
+for (int pos = 180; pos >= 0; pos -= 2) {
+    gateServo.write(pos);
+    delay(20);
+}
+
+}
+
+// Function to Update LCD Display void updateDisplay() { lcd.clear(); lcd.setCursor(0, 0); if (parkingSpaces > 0) { lcd.print("Spaces: "); lcd.print(parkingSpaces); } else { lcd.print("No Space in Parking!"); } }
